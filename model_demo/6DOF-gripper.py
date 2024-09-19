@@ -176,6 +176,21 @@ ball.SetFixed(True)
 ball.EnableCollision(False)
 my_system.Add(ball)
 
+# griper ball lock
+ball_gripper_lock = chrono.ChLinkLockLock()
+lock3_frame = my_system.SearchLink('Coincident10').GetVisualModelFrame()
+ball_gripper_lock.Initialize(gripper, ball, lock3_frame)
+ball_gripper_lock_flag = False
+
+def ball_contact_check():
+    global ball_gripper_lock_flag 
+    dist = (ball.GetPos() - gripper_finger_1.GetPos()).Length()
+    if ball_gripper_lock_flag and dist > 0.05:
+        my_system.RemoveLink(ball_gripper_lock)
+        ball_gripper_lock_flag = False
+    if (not ball_gripper_lock_flag) and dist < 0.05:
+        my_system.Add(ball_gripper_lock)
+        ball_gripper_lock_flag = True
 
 ### Create visualization for the gripper fingers
 vis = chronoirr.ChVisualSystemIrrlicht(my_system, chrono.ChVector3d(-2, 1, -1))
@@ -195,8 +210,10 @@ rt_timer = chrono.ChRealtimeStepTimer()
 # my_system.SetSolver(solver)
 my_system.GetSolver().AsIterative().SetMaxIterations(500)
 
-
+ball.EnableCollision(False)
 while vis.Run():
+    ball_contact_check()
+
     sim_time = my_system.GetChTime()
     if step_number % render_steps == 0:
         vis.BeginScene()
@@ -208,17 +225,20 @@ while vis.Run():
     my_system.DoStepDynamics(timestep)
     motor_gripper.SetAngleFunction(motor_gripper_func)
     # # implement hardcode control
-    if sim_time > 2.5:
-        ball.EnableCollision(True)
+    
+    if sim_time > .5:
+
+        ball.EnableCollision(False)
         ball.SetFixed(False)
         # motor_base.SetAngleFunction(motor_base_func)
         motor_base_arm.SetAngleFunction(motor_base_arm_func)
-    if sim_time > 3.5:
+
+    if sim_time > 1.0:
         motor_base.SetAngleFunction(motor_base_func)
 
-    if sim_time > 4.5:
+    if sim_time > 1.5:
         gripper_place()
-        
+
     # else:
     #     print("finger 1 pos: ", gripper_finger_1.GetPos())
     #     print("finger 2 pos: ", gripper_finger_2.GetPos())
