@@ -81,78 +81,12 @@ class Jackal:
             self.system.Add(self.motors[wheel])
 
     def control(self, speed=1, steering=0):
-        
-        
         linear_to_angular_velocity = speed / 0.1
         # set motor velocity function based on speed and skid steering
-        wheel_motor_func1 = chrono.ChFunctionConst(-linear_to_angular_velocity * (1 + steering))
-        wheel_motor_func2 = chrono.ChFunctionConst(linear_to_angular_velocity * (1 - steering))
+        wheel_motor_func1 = chrono.ChFunctionConst(-linear_to_angular_velocity * (1 - steering))
+        wheel_motor_func2 = chrono.ChFunctionConst(linear_to_angular_velocity * (1 + steering))
         
         self.motors['fr'].SetMotorFunction(wheel_motor_func1)
         self.motors['fl'].SetMotorFunction(wheel_motor_func2)
         self.motors['br'].SetMotorFunction(wheel_motor_func1)
         self.motors['bl'].SetMotorFunction(wheel_motor_func2)
-
-my_system = chrono.ChSystemNSC()
-my_system.SetCollisionSystemType(chrono.ChCollisionSystem.Type_BULLET)
-
-jackal = Jackal(my_system)
-
-# Create rigid ground 
-# Create the terrain
-patch_mat = chrono.ChContactMaterialNSC()
-# patch_mat.SetFriction(0.1)
-# patch_mat.SetRollingFriction(0.001)
-terrain = veh.RigidTerrain(my_system)
-patch = terrain.AddPatch(patch_mat, 
-    chrono.ChCoordsysd(chrono.ChVector3d(0, -0.3, 0), chrono.Q_ROTATE_Z_TO_Y), 
-    100, 100)
-
-patch.SetTexture(chrono.GetChronoDataPath()+"vehicle/terrain/textures/tile4.jpg", 200, 200)
-patch.SetColor(chrono.ChColor(0.8, 0.8, 0.5))
-terrain.Initialize()
-
-### Create visualization for the gripper fingers
-vis = chronoirr.ChVisualSystemIrrlicht(my_system, chrono.ChVector3d(-2, 1, -1))
-vis.EnableCollisionShapeDrawing(True)
-timestep = 0.001
-render_step_size = 1.0 / 25  # FPS = 50
-render_steps = math.ceil(render_step_size / timestep)
-step_number = 0
-render_frame = 0
-
-rt_timer = chrono.ChRealtimeStepTimer()
-
-my_system.GetSolver().AsIterative().SetMaxIterations(500)
-
-
-while vis.Run():
-    sim_time = my_system.GetChTime()
-    if step_number % render_steps == 0:
-        vis.BeginScene()
-        vis.Render()
-        vis.EndScene()
-        # filename = './IMG_jackal/img_' + str(render_frame) +'.jpg' 
-        # vis.WriteImageToFile(filename)
-        # render_frame += 1
-    terrain.Synchronize(sim_time)
-    my_system.DoStepDynamics(timestep)
-    terrain.Advance(timestep)
-    if 0.5<sim_time < 5.0:
-        jackal.control(speed=0.2,steering=0.0)
-        print("forward")
-    elif sim_time > 5.0 and sim_time < 10.5:
-        jackal.control(speed=0.2,steering=0.5)
-        print("left")
-    elif sim_time > 10.5 and sim_time < 20.0:
-        jackal.control(speed=0.2,steering=-0.5)
-        print("right")
-    elif sim_time > 20.0:
-        jackal.control(speed=0.2,steering=0.0)
-        print("forward")
-    #jackal.control_steering(steering_angle=0.0)
-    
-    rt_timer.Spin(timestep)
-    step_number += 1
-
- 
